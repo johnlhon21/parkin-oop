@@ -1,0 +1,76 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+    image: dev-infinity-shopm8s-api:latest
+    container_name: dev-infinity-shopm8s-app
+    restart: unless-stopped
+    tty: true
+    env_file:
+      - .env.dev
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./.docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: dev-infinity-shopm8s-webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8090:80"
+      - "6433:443"
+    volumes:
+      - ./:/var/www
+      - ./.docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+  #Queue Service
+  queue:
+    image: dev-infinity-shopm8s-api:latest
+    container_name: dev-infinity-shopm8s-queue-worker
+    environment:
+      QUEUE_CONNECTION: database
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    entrypoint: "php artisan queue:listen"
+    networks:
+      - app-network
+  #Scheduler Service
+  scheduler:
+    image: dev-infinity-shopm8s-api:latest
+    container_name: dev-infinity-shopm8s-command-scheduler
+    environment:
+      QUEUE_CONNECTION: database
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    entrypoint: "/usr/local/bin/scheduler.sh"
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
+  redis:
+    driver: local
