@@ -4,6 +4,7 @@
 namespace App\Versions\V1\Libraries;
 
 
+use App\Versions\V1\Libraries\ParkingSizes\ParkingSize;
 use App\Versions\V1\Libraries\ParkingSizes\ParkingSizeFactory;
 use Carbon\Carbon;
 
@@ -23,6 +24,10 @@ class ParkingFee
 
     protected $flatRate = 0.00;
 
+    protected $parkingSize = null;
+
+    protected $twentyFourHoursParking = 0;
+
     public function __construct($size, $parkingStartTime, $continuousRate)
     {
         $this->size = $size;
@@ -36,11 +41,13 @@ class ParkingFee
             // Initialize Variables
 
             $parkingSize = ParkingSizeFactory::make($this->size);
+            $this->parkingSize = $parkingSize;
             $totalHours = $this->calculateTotalHours();
             $this->totalHours = $totalHours;
             $this->flatRate = $parkingSize->getFlatRate();
             $this->hourlyRate = $parkingSize->getPerHourRate();
             $firstParkingPayment = $this->continuousRate ? $parkingSize->getFlatRate() : 0;
+            $this->flatRateHours = $parkingSize->getFlatRateHours();
 
             // Flat Rate
             if ($totalHours <= $parkingSize->getFlatRateHours()) {
@@ -71,6 +78,7 @@ class ParkingFee
                 $additionalHoursFee = $additionalHours * $parkingSize->getPerHourRate();
                 $parkingFee = $twentyFourHoursParkingFee + $additionalHoursFee;
 
+                $this->twentyFourHoursParking = $twentyFourHoursParking;
                 $this->parkingFee = $parkingFee - $firstParkingPayment;
             }
 
@@ -117,5 +125,17 @@ class ParkingFee
     public function getFlatRate(): float
     {
         return $this->flatRate;
+    }
+
+    public function getParkingSize(): ParkingSize {
+        return  $this->parkingSize;
+    }
+
+    /**
+     * @return int
+     */
+    public function getTwentyFourHoursParking(): int
+    {
+        return $this->twentyFourHoursParking;
     }
 }

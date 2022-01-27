@@ -107,16 +107,36 @@ class ParkingService extends BaseService implements ParkingServiceInterface
                 'is_available' => 1
             ]);
 
+            // Initialized Computed Variables
+            $succeedingHours = $parkingFee->getTotalHours() - $parkingFee->getParkingSize()->getFlatRateHours();
+            $succeedingHoursFee = $succeedingHours > 0 ? $succeedingHours * $parkingFee->getHourlyRate() : 0;
+            $twentyFourHourParking = $parkingFee->getTwentyFourHoursParking();
+            $twentyFourHourParkingFee = 0;
+
+            if ($twentyFourHourParking > 0) {
+                $succeedingHours = $parkingFee->getTotalHours() - ($twentyFourHourParking * 24);
+                $succeedingHoursFee = $succeedingHours > 0 ? $succeedingHours * $parkingFee->getHourlyRate() : 0;
+                $twentyFourHourParkingFee = $twentyFourHourParking * $parkingFee->getParkingSize()->getTwentyFourHoursParkingRate();
+            }
+
             return $this->response()->with([
                 'unparked' => true,
                 'parking_fee_details' => [
-                    'entry_time' => $parkedCar->parked_at,
-                    'exit_time' => $parkedCar->unparked_at,
+                    'car_plate' => $parkedCar->car_plate,
+                    'entry_time' => Carbon::parse($parkedCar->parked_at)->toDayDateTimeString(),
+                    'exit_time' => Carbon::parse($parkedCar->unparked_at)->toDayDateTimeString(),
                     'parking_size' => $parkedCar->parkingSlot->size,
                     'flat_rate' => number_format($parkingFee->getFlatRate(), 2),
                     'hourly_rate' => number_format($parkingFee->getHourlyRate(),2),
                     'total_hours' => $parkingFee->getTotalHours(),
-                    'total_parking_fee' => number_format($parkingFee->getParkingFee(),2)
+                    'total_parking_fee' => number_format($parkingFee->getParkingFee(),2),
+                    'previous_payment' => $parkedCar->is_continuous == 1 ? number_format($parkingFee->getFlatRate(),2) : null,
+                    'flat_rate_hours' =>  $parkingFee->getParkingSize()->getFlatRateHours(),
+                    'succeeding_hours' => $succeedingHours > 0 ? $succeedingHours : 0,
+                    'twenty_four_hours_rate' => number_format($parkingFee->getParkingSize()->getTwentyFourHoursParkingRate(), 2),
+                    'total_hourly_rate' => number_format($succeedingHoursFee, 2),
+                    'twenty_four_hour_parking' => $twentyFourHourParking,
+                    'twenty_four_hour_parking_fee' => number_format($twentyFourHourParkingFee, 2),
                 ]
             ], 'Unparked Success', 200);
 
