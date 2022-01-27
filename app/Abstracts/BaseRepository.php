@@ -97,4 +97,11 @@ abstract class BaseRepository
     public function insert(array $data) {
         return $this->model->insert($data);
     }
+
+
+    public function truncate()
+    {
+        $this->model->truncate();
+        return true;
+    }
 }

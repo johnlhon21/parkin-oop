@@ -11,6 +11,8 @@ class ParkingSlotServiceTest extends TestCase
 
     protected $parkingSlotService;
 
+    protected $parkedCarRepository;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -18,14 +20,16 @@ class ParkingSlotServiceTest extends TestCase
         $this->parkingSlotRepository = \Mockery::mock(app(\App\Repositories\ParkingSlotRepository::class));
         $this->request = \Mockery::mock(app(\Illuminate\Http\Request::class));
         $this->parkingSlot = \Mockery::mock(app(\App\Versions\V1\Libraries\ParkingSlot::class));
+        $this->parkedCarRepository = \Mockery::mock(app(\App\Repositories\ParkedCarRepository::class));
 
-        $this->parkingSlotService = new \App\Versions\V1\Services\ParkingSlotService($this->request, $this->parkingSlot, $this->parkingSlotRepository);
+        $this->parkingSlotService = new \App\Versions\V1\Services\ParkingSlotService($this->request, $this->parkingSlot, $this->parkingSlotRepository, $this->parkedCarRepository);
     }
 
     public function testInitializedWithInvalidConfigurationMustThrowException()
     {
         $parkingSLotContext = \Mockery::mock(app(\App\Models\ParkingSlot::class));
         $parkingSLotContext->makePartial()->shouldReceive('count')->andReturn(0);
+        $parkingSLotContext->makePartial()->shouldReceive('groupBy')->andReturn([]);
         $this->parkingSlotRepository->makePartial()->shouldReceive('getParkingSlots')->andReturn($parkingSLotContext);
         $this->parkingSlotRepository->makePartial()->shouldReceive('insert')->andReturn(false);
         $this->parkingSlot->makePartial()->shouldReceive('generate')->andThrow(new Exception('Invalid parking slot per set.'));
@@ -75,6 +79,7 @@ class ParkingSlotServiceTest extends TestCase
 
     public function testTruncateParkingSlots()
     {
+        $this->parkingSlotRepository->makePartial()->shouldReceive('truncate')->andReturn(true);
         $this->parkingSlotRepository->makePartial()->shouldReceive('truncate')->andReturn(true);
 
         $result = $this->parkingSlotService->truncate();

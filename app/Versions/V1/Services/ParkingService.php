@@ -41,7 +41,7 @@ class ParkingService extends BaseService implements ParkingServiceInterface
             $parking = $this->doParking($this->request->input('car_plate'), $parkingSlot);
 
             return $this->response()->with([
-                'parking_details' => $parking->toArray(),
+                'parking_details' => $parking->load('parkingSlot'),
                 'parked' => true
             ], 'Successfully parked', 200);
 
@@ -56,10 +56,17 @@ class ParkingService extends BaseService implements ParkingServiceInterface
                 return $this->response()->with([
                     'parking_details' => null,
                     'parked' => false
-                ], 'Full Parking', 200);
+                ], 'Full Parking', 400);
             }
 
         } catch (InvalidEntryPointException $exception) {
+
+            return $this->response()->with([
+                'parking_details' => null,
+                'parked' => false
+            ], $exception->getMessage(), 500);
+
+        } catch (\Exception $exception) {
             return $this->response()->with([
                 'parking_details' => null,
                 'parked' => false
@@ -93,7 +100,7 @@ class ParkingService extends BaseService implements ParkingServiceInterface
 
             // UnParked Car
             $this->parkedCarRepository->update($parkedCar, [
-               'unparked_at' => Carbon::now()->format('Y-m-d H::s'),
+               'unparked_at' => Carbon::now()->format('Y-m-d H:i:s'),
             ]);
 
             $this->parkingSlotRepository->update($parkedCar->parkingSlot, [
@@ -103,6 +110,8 @@ class ParkingService extends BaseService implements ParkingServiceInterface
             return $this->response()->with([
                 'unparked' => true,
                 'parking_fee_details' => [
+                    'entry_time' => $parkedCar->parked_at,
+                    'exit_time' => $parkedCar->unparked_at,
                     'parking_size' => $parkedCar->parkingSlot->size,
                     'flat_rate' => number_format($parkingFee->getFlatRate(), 2),
                     'hourly_rate' => number_format($parkingFee->getHourlyRate(),2),
@@ -145,14 +154,16 @@ class ParkingService extends BaseService implements ParkingServiceInterface
      * @param $carPlate
      * @param ParkingSlot $parkingSlot
      * @return ParkedCar
+     * @throws \Exception
      */
     private function doParking($carPlate, ParkingSlot $parkingSlot): ParkedCar
     {
-        $this->parkingSlotRepository->update($parkingSlot, ['is_available' => false]);
         $parkedCar = $this->parkedCarRepository->getParkedCarsWithinAnHour(strtoupper($carPlate));
-
         // Continuous Parking
         if ($parkedCar !== null) {
+            if ($parkedCar->unparked_at == null) {
+                throw new \Exception("Car already is already inside the parking complex.");
+            }
             $this->parkedCarRepository->update($parkedCar, [
                 'is_continuous' => true,
                 'unparked_at' => null,
@@ -169,6 +180,8 @@ class ParkingService extends BaseService implements ParkingServiceInterface
             ]);
         }
 
-        return $parkedCar->load('parkingSlot');
+        $this->parkingSlotRepository->update($parkingSlot, ['is_available' => false]);
+
+        return $parkedCar;
     }
 }

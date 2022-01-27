@@ -21,7 +21,7 @@ class CreateParkingSlotsTable extends Migration
             $table->string('size')->nullable();
             $table->boolean('is_available')->default(true);
             $table->string('nearest_entry_point')->nullable();
-            $table->integer('entry_point_coverage')->nullable();
+            $table->decimal('entry_point_coverage',10 ,2)->nullable();
             $table->timestamps();
         });
     }

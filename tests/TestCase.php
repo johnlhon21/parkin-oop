@@ -24,4 +24,8 @@ abstract class TestCase extends Laravel\Lumen\Testing\TestCase
         $this->faker = app()->make(\Faker\Generator::class);
         parent::setUp();
     }
+
+    public function decode($response) {
+        return json_decode($response->response->getContent());
+    }
 }

@@ -12,8 +12,8 @@
 
 $router->group(['prefix' => 'v1/api/'], function() use ($router) {
 
-    $router->get('/parking', ['uses' => 'Parking\ParkingSlotController@get']);
-    $router->post('/parking/truncate', ['uses' => 'Parking\ParkingSlotController@truncate']);
+    $router->get('/parking/slots', ['uses' => 'Parking\ParkingSlotController@get']);
+    $router->delete('/parking/slots', ['uses' => 'Parking\ParkingSlotController@truncate']);
 
     $router->post('/park/{entryPointCoverage}', ['uses' => 'Parking\ParkingController@park']);
     $router->post('/unpark/{parkedCarId}', ['uses' => 'Parking\ParkingController@unpark']);

@@ -19,11 +19,11 @@
         </whitelist>
     </filter>
     <php>
-        <env name="APP_ENV" value="testing"/>
+        <env name="APP_ENV" value="testing" force="true"/>
         <env name="CACHE_DRIVER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="bucket_testing"/>
+        <env name="DB_DATABASE" value="parking_oop_testing" force="true"/>
         <env name="DB_USERNAME" value="docker"/>
         <env name="DB_PASSWORD" value="docker101"/>
     </php>

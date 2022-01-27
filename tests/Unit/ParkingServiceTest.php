@@ -55,16 +55,21 @@ class ParkingServiceTest extends TestCase
         $this->assertArrayHasKey('parked', $result->data);
         $this->assertNull($result->data['parking_details']);
         $this->assertFalse($result->data['parked']);
-        $this->assertEquals(200, $result->status);
+        $this->assertEquals(400, $result->status);
         $this->assertEquals('Full Parking', $result->message);
     }
 
     public function testParkWithAvailableParkingSlot()
     {
         $parkingSlotContext = new \App\Models\ParkingSlot();
+        $parkedCar = \Mockery::mock(app(\App\Models\ParkedCar::class));
+        $parkedCar->unparked_at = Carbon\Carbon::now()->format('Y-m-d H:i:s');
+        $parkedCar->makePartial()->shouldReceive('load')->andReturn($parkingSlotContext);
         $this->parkingSlotRepository->makePartial()->shouldReceive('getNearestParkingSlot')->andReturn($parkingSlotContext);
-        $this->parkingSlotRepository->shouldReceive('update')->andReturn($parkingSlotContext);
-        $this->parkedCarRepository->shouldReceive('getParkedCarsWithinAnHour')->andReturn(new \App\Models\ParkedCar());
+        $this->parkingSlotRepository->makePartial()->shouldReceive('update')->andReturn($parkingSlotContext);
+        $this->parkedCarRepository->makePartial()->shouldReceive('getParkedCarsWithinAnHour')->andReturn($parkedCar);
+        $this->parkedCarRepository->makePartial()->shouldReceive('update')->andReturn(true);
+        $this->parkedCarRepository->makePartial()->shouldReceive('create')->andReturn(true);
 
         $result = $this->parkingService->park('small', 3);
 

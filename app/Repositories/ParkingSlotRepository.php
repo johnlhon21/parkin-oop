@@ -9,8 +9,6 @@ use App\Models\ParkingSlot;
 use App\Versions\V1\Exceptions\InvalidEntryPointException;
 use App\Versions\V1\Exceptions\NoParkingSlotException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use mysql_xdevapi\Exception;
 
 class ParkingSlotRepository extends BaseRepository
 {
@@ -22,12 +20,6 @@ class ParkingSlotRepository extends BaseRepository
     public function getParkingSlots()
     {
         return $this->model->get();
-    }
-
-    public function truncate()
-    {
-        $this->model->truncate();
-        return true;
     }
 
     public function isValidEntryPointCoverage($entryPointCoverage)
@@ -43,6 +35,8 @@ class ParkingSlotRepository extends BaseRepository
             throw new InvalidEntryPointException();
         }
 
+        $epcOrder = $size == 'large' ? 'ASC' : 'DESC';
+
         $query = $this->model
             ->select([
                 '*',
@@ -51,12 +45,32 @@ class ParkingSlotRepository extends BaseRepository
             ->where('size', strtolower($size))
             ->where('is_available', true)
             ->orderBy('nearest', 'ASC')
-            ->limit(1);
-
+            ->orderBy('entry_point_coverage', $epcOrder);
+//            ->limit(1);
         if ($query->count() < 1) {
-           throw new NoParkingSlotException();
+            throw new NoParkingSlotException();
         }
 
-        return $query->first();
+//        return $query->first();
+        $collection = $query->get()->groupBy('entry_point_coverage');
+        $slot = null;
+        foreach ($collection as $key =>  $item) {
+
+           if ($key == $entryPointCoverage) {
+                $slot = $item->last();
+                break;
+           }
+
+            if ($key < $entryPointCoverage) {
+                $slot = $item->last();
+                break;
+            }
+
+           if ($key > $entryPointCoverage) {
+               $slot = $item->first();
+               break;
+           }
+        }
+        return $slot;
     }
 }

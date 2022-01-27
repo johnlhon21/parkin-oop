@@ -5,6 +5,7 @@ namespace App\Versions\V1\Services;
 
 
 use App\Abstracts\BaseService;
+use App\Repositories\ParkedCarRepository;
 use App\Repositories\ParkingSlotRepository;
 use App\Versions\V1\Libraries\ParkingSlot;
 use Illuminate\Http\Request;
@@ -15,11 +16,14 @@ class ParkingSlotService extends BaseService implements ParkingSlotServiceInterf
 
     protected $parkingSlotRepository;
 
-    public function __construct(Request $request, ParkingSlot $parkingSlot, ParkingSlotRepository $parkingSlotRepository)
+    protected $parkedCarRepository;
+
+    public function __construct(Request $request, ParkingSlot $parkingSlot, ParkingSlotRepository $parkingSlotRepository, ParkedCarRepository $parkedCarRepository)
     {
         parent::__construct($request);
         $this->parkingSlots = $parkingSlot;
         $this->parkingSlotRepository = $parkingSlotRepository;
+        $this->parkedCarRepository = $parkedCarRepository;
     }
 
     public function initialize()
@@ -51,6 +55,7 @@ class ParkingSlotService extends BaseService implements ParkingSlotServiceInterf
     public function truncate()
     {
         $this->parkingSlotRepository->truncate();
+        $this->parkedCarRepository->truncate();
         return $this->response()->with([
             'parking_slots' => [],
         ], 'Parking Slots Successfully Cleared', 200);
